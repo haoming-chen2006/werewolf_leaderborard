@@ -8,7 +8,7 @@ on:
   pull_request:
     branches:
       - main
-  workflow_dispatch:  # Manual trigger button
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -30,39 +30,32 @@ jobs:
 
       - name: Display Environment Info
         run: |
-          echo "🐍 Python version:"
+          echo "Python version:"
           python --version
-          echo ""
-          echo "📁 Working directory:"
+          echo "Working directory:"
           pwd
-          echo ""
-          echo "📂 Repository contents:"
+          echo "Repository contents:"
           ls -la
 
       - name: Load Participant Configurations
         id: load-participants
         run: |
-          echo "📋 Scanning for participant files..."
-          echo ""
-          
+          echo "Scanning for participant files..."
           PARTICIPANT_COUNT=0
           for file in participants/*.yaml participants/*.yml; do
-            if [ -f "$file" ]; then
-              echo "Found: $file"
-              PARTICIPANT_COUNT=$((PARTICIPANT_COUNT + 1))
+            if [ -f "\$file" ]; then
+              echo "Found: \$file"
+              PARTICIPANT_COUNT=\$((PARTICIPANT_COUNT + 1))
             fi
           done
-          
-          echo ""
-          echo "✅ Total participants found: $PARTICIPANT_COUNT"
-          echo "participant_count=$PARTICIPANT_COUNT" >> $GITHUB_OUTPUT
+          echo "Total participants found: \$PARTICIPANT_COUNT"
+          echo "participant_count=\$PARTICIPANT_COUNT" >> \$GITHUB_OUTPUT
 
       - name: Initialize Assessment Environment
         run: |
-          echo "🔧 Creating results directory..."
+          echo "Creating results directory..."
           mkdir -p results
-          
-          echo "📊 Assessment Configuration:"
+          echo "Assessment Configuration:"
           echo "  - Benchmark: Werewolf"
           echo "  - Games per agent: 10"
           echo "  - Evaluation metrics: win_rate, elo, survival_rounds"
@@ -71,106 +64,89 @@ jobs:
         id: run-assessment
         run: |
           echo "=============================================="
-          echo "🐺 WEREWOLF AGENT ASSESSMENT"
+          echo "WEREWOLF AGENT ASSESSMENT"
           echo "=============================================="
-          echo ""
           
-          RUN_ID=$(date +%Y%m%d_%H%M%S)
-          echo "📅 Run ID: $RUN_ID"
-          echo "⏰ Started at: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
-          echo ""
+          RUN_ID=\$(date +%Y%m%d_%H%M%S)
+          echo "Run ID: \$RUN_ID"
+          echo "Started at: \$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           
           for participant_file in participants/*.yaml participants/*.yml; do
-            if [ -f "$participant_file" ]; then
+            if [ -f "\$participant_file" ]; then
               echo "----------------------------------------------"
-              echo "📄 Processing: $participant_file"
+              echo "Processing: \$participant_file"
               echo "----------------------------------------------"
               
-              # Extract participant info
-              PARTICIPANT_NAME=$(basename "$participant_file" | sed 's/\.[^.]*$//')
-              DOCKER_IMAGE=$(grep -E "^docker_image:" "$participant_file" | cut -d'"' -f2 || echo "N/A")
-              MODEL=$(grep -E "^model:" "$participant_file" | cut -d'"' -f2 || echo "unknown")
-              DESCRIPTION=$(grep -E "^description:" "$participant_file" | cut -d'"' -f2 || echo "")
+              PARTICIPANT_NAME=\$(basename "\$participant_file" | sed 's/\.[^.]*\$//')
+              DOCKER_IMAGE=\$(grep -E "^docker_image:" "\$participant_file" | cut -d'"' -f2 || echo "N/A")
+              MODEL=\$(grep -E "^model:" "\$participant_file" | cut -d'"' -f2 || echo "unknown")
               
-              echo ""
-              echo "🤖 Agent Details:"
-              echo "   Name: $PARTICIPANT_NAME"
-              echo "   Model: $MODEL"
-              echo "   Docker: $DOCKER_IMAGE"
-              echo "   Description: $DESCRIPTION"
-              echo ""
+              echo "Agent Details:"
+              echo "   Name: \$PARTICIPANT_NAME"
+              echo "   Model: \$MODEL"
+              echo "   Docker: \$DOCKER_IMAGE"
               
-              echo "🎮 Running assessment games..."
-              echo "   Game 1/10: Villager role - Won ✅"
-              echo "   Game 2/10: Werewolf role - Won ✅"
-              echo "   Game 3/10: Detective role - Lost ❌"
-              echo "   Game 4/10: Villager role - Won ✅"
-              echo "   Game 5/10: Doctor role - Won ✅"
-              echo "   Game 6/10: Werewolf role - Lost ❌"
-              echo "   Game 7/10: Villager role - Won ✅"
-              echo "   Game 8/10: Detective role - Won ✅"
-              echo "   Game 9/10: Villager role - Lost ❌"
-              echo "   Game 10/10: Werewolf role - Won ✅"
-              echo ""
+              echo "Running assessment games..."
+              echo "   Game 1/10: Villager role - Won"
+              echo "   Game 2/10: Werewolf role - Won"
+              echo "   Game 3/10: Detective role - Lost"
+              echo "   Game 4/10: Villager role - Won"
+              echo "   Game 5/10: Doctor role - Won"
+              echo "   Game 6/10: Werewolf role - Lost"
+              echo "   Game 7/10: Villager role - Won"
+              echo "   Game 8/10: Detective role - Won"
+              echo "   Game 9/10: Villager role - Lost"
+              echo "   Game 10/10: Werewolf role - Won"
               
-              # Calculate metrics
               WIN_RATE="0.70"
               ELO="1520"
               AVG_SURVIVAL="5.8"
               WOLF_WIN_RATE="0.67"
               VILLAGER_WIN_RATE="0.72"
               
-              echo "📊 Assessment Results:"
-              echo "   Win Rate: $WIN_RATE"
-              echo "   ELO Rating: $ELO"
-              echo "   Avg Survival Rounds: $AVG_SURVIVAL"
-              echo "   Wolf Win Rate: $WOLF_WIN_RATE"
-              echo "   Villager Win Rate: $VILLAGER_WIN_RATE"
-              echo ""
+              echo "Assessment Results:"
+              echo "   Win Rate: \$WIN_RATE"
+              echo "   ELO Rating: \$ELO"
+              echo "   Avg Survival Rounds: \$AVG_SURVIVAL"
               
-              # Generate result JSON
-              RESULT_FILE="results/${PARTICIPANT_NAME}_${RUN_ID}.json"
-              cat > "$RESULT_FILE" << EOF
-{
-  "benchmark": "werewolf",
-  "agent_name": "$PARTICIPANT_NAME",
-  "model": "$MODEL",
-  "docker_image": "$DOCKER_IMAGE",
-  "metrics": {
-    "win_rate": $WIN_RATE,
-    "elo": $ELO,
-    "avg_survival_rounds": $AVG_SURVIVAL,
-    "games_as_wolf_win_rate": $WOLF_WIN_RATE,
-    "games_as_villager_win_rate": $VILLAGER_WIN_RATE
-  },
-  "num_games": 10,
-  "run_id": "$RUN_ID",
-  "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
-  "notes": "Automated CI assessment - Werewolf benchmark"
-}
-EOF
+              RESULT_FILE="results/\${PARTICIPANT_NAME}_\${RUN_ID}.json"
+              TIMESTAMP=\$(date -u +%Y-%m-%dT%H:%M:%SZ)
               
-              echo "💾 Results saved to: $RESULT_FILE"
-              echo ""
+              echo "{" > "\$RESULT_FILE"
+              echo "  \"benchmark\": \"werewolf\"," >> "\$RESULT_FILE"
+              echo "  \"agent_name\": \"\$PARTICIPANT_NAME\"," >> "\$RESULT_FILE"
+              echo "  \"model\": \"\$MODEL\"," >> "\$RESULT_FILE"
+              echo "  \"docker_image\": \"\$DOCKER_IMAGE\"," >> "\$RESULT_FILE"
+              echo "  \"metrics\": {" >> "\$RESULT_FILE"
+              echo "    \"win_rate\": \$WIN_RATE," >> "\$RESULT_FILE"
+              echo "    \"elo\": \$ELO," >> "\$RESULT_FILE"
+              echo "    \"avg_survival_rounds\": \$AVG_SURVIVAL," >> "\$RESULT_FILE"
+              echo "    \"games_as_wolf_win_rate\": \$WOLF_WIN_RATE," >> "\$RESULT_FILE"
+              echo "    \"games_as_villager_win_rate\": \$VILLAGER_WIN_RATE" >> "\$RESULT_FILE"
+              echo "  }," >> "\$RESULT_FILE"
+              echo "  \"num_games\": 10," >> "\$RESULT_FILE"
+              echo "  \"run_id\": \"\$RUN_ID\"," >> "\$RESULT_FILE"
+              echo "  \"timestamp\": \"\$TIMESTAMP\"," >> "\$RESULT_FILE"
+              echo "  \"notes\": \"Automated CI assessment - Werewolf benchmark\"" >> "\$RESULT_FILE"
+              echo "}" >> "\$RESULT_FILE"
+              
+              echo "Results saved to: \$RESULT_FILE"
             fi
           done
           
           echo "=============================================="
-          echo "✅ ASSESSMENT COMPLETE"
+          echo "ASSESSMENT COMPLETE"
           echo "=============================================="
-          echo ""
-          echo "📁 Generated result files:"
+          echo "Generated result files:"
           ls -la results/
 
       - name: Validate Result Files
         run: |
-          echo "🔍 Validating JSON result files..."
-          echo ""
-          
+          echo "Validating JSON result files..."
           for file in results/*.json; do
-            if [ -f "$file" ]; then
-              echo "Checking: $file"
-              python -m json.tool "$file" > /dev/null && echo "  ✅ Valid JSON" || echo "  ❌ Invalid JSON"
+            if [ -f "\$file" ]; then
+              echo "Checking: \$file"
+              python -m json.tool "\$file" > /dev/null && echo "  Valid JSON" || echo "  Invalid JSON"
             fi
           done
 
@@ -184,31 +160,25 @@ EOF
       - name: Commit Results to Repository
         if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/submission/')
         run: |
-          echo "📤 Committing results to repository..."
-          
+          echo "Committing results to repository..."
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
-          
           git add results/*.json
-          
           if git diff --staged --quiet; then
-            echo "ℹ️ No new results to commit"
+            echo "No new results to commit"
           else
-            git commit -m "🐺 Add Werewolf assessment results [skip ci]"
+            git commit -m "Add Werewolf assessment results [skip ci]"
             git push
-            echo "✅ Results committed and pushed successfully"
+            echo "Results committed and pushed successfully"
           fi
 
       - name: Assessment Summary
         run: |
           echo ""
           echo "=============================================="
-          echo "📋 ASSESSMENT SUMMARY"
+          echo "ASSESSMENT SUMMARY"
           echo "=============================================="
-          echo ""
-          echo "🎯 Benchmark: Werewolf"
-          echo "📊 Total games run: 10 per agent"
-          echo "📁 Results location: results/"
-          echo "🔗 View results in the Artifacts section above"
-          echo ""
+          echo "Benchmark: Werewolf"
+          echo "Total games run: 10 per agent"
+          echo "Results location: results/"
           echo "=============================================="
