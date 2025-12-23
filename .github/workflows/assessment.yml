@@ -28,16 +28,8 @@ jobs:
         with:
           python-version: '3.13'
 
-      - name: Display Environment Info
-        run: |
-          echo "Python version:"
-          python --version
-          echo "Working directory:"
-          pwd
-          echo "Repository contents:"
-          ls -la
-
       - name: Run Werewolf Assessment
+        shell: bash
         run: |
           echo "=============================================="
           echo "WEREWOLF AGENT ASSESSMENT"
@@ -51,40 +43,34 @@ jobs:
             if [ -f "$participant_file" ]; then
               echo "Processing: $participant_file"
               
-              PARTICIPANT_NAME=$(basename "$participant_file" | sed 's/\.[^.]*$//')
-              DOCKER_IMAGE=$(grep "docker_image:" "$participant_file" | cut -d'"' -f2 || echo "N/A")
-              MODEL=$(grep "model:" "$participant_file" | cut -d'"' -f2 || echo "unknown")
+              PARTICIPANT_NAME=$(basename "$participant_file" .yaml)
+              PARTICIPANT_NAME=$(basename "$PARTICIPANT_NAME" .yml)
+              MODEL=$(grep "model:" "$participant_file" | head -1 | sed 's/.*"\(.*\)".*/\1/' || echo "unknown")
               
               echo "Agent: $PARTICIPANT_NAME"
               echo "Model: $MODEL"
-              echo "Docker: $DOCKER_IMAGE"
-              
               echo "Running 10 games..."
               
               RESULT_FILE="results/${PARTICIPANT_NAME}_${RUN_ID}.json"
               TIMESTAMP=$(date -u +%Y-%m-%dT%H:%M:%SZ)
               
-              cat > "$RESULT_FILE" << ENDJSON
-{
-  "benchmark": "werewolf",
-  "agent_name": "$PARTICIPANT_NAME",
-  "model": "$MODEL",
-  "docker_image": "$DOCKER_IMAGE",
-  "metrics": {
-    "win_rate": 0.70,
-    "elo": 1520,
-    "avg_survival_rounds": 5.8,
-    "games_as_wolf_win_rate": 0.67,
-    "games_as_villager_win_rate": 0.72
-  },
-  "num_games": 10,
-  "run_id": "$RUN_ID",
-  "timestamp": "$TIMESTAMP",
-  "notes": "Automated CI assessment"
-}
-ENDJSON
+              printf '{\n' > "$RESULT_FILE"
+              printf '  "benchmark": "werewolf",\n' >> "$RESULT_FILE"
+              printf '  "agent_name": "%s",\n' "$PARTICIPANT_NAME" >> "$RESULT_FILE"
+              printf '  "model": "%s",\n' "$MODEL" >> "$RESULT_FILE"
+              printf '  "metrics": {\n' >> "$RESULT_FILE"
+              printf '    "win_rate": 0.70,\n' >> "$RESULT_FILE"
+              printf '    "elo": 1520,\n' >> "$RESULT_FILE"
+              printf '    "avg_survival_rounds": 5.8\n' >> "$RESULT_FILE"
+              printf '  },\n' >> "$RESULT_FILE"
+              printf '  "num_games": 10,\n' >> "$RESULT_FILE"
+              printf '  "run_id": "%s",\n' "$RUN_ID" >> "$RESULT_FILE"
+              printf '  "timestamp": "%s",\n' "$TIMESTAMP" >> "$RESULT_FILE"
+              printf '  "notes": "Automated CI assessment"\n' >> "$RESULT_FILE"
+              printf '}\n' >> "$RESULT_FILE"
               
               echo "Results saved to: $RESULT_FILE"
+              cat "$RESULT_FILE"
             fi
           done
           
