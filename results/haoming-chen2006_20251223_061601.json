@@ -1,0 +1,14 @@
+{
+  "benchmark": "werewolf",
+  "agent_name": "haoming-chen2006",
+  "model": "gpt-4o-mini",
+  "metrics": {
+    "win_rate": 0.70,
+    "elo": 1520,
+    "avg_survival_rounds": 5.8
+  },
+  "num_games": 10,
+  "run_id": "20251223_061601",
+  "timestamp": "2025-12-23T06:16:01Z",
+  "notes": "Automated CI assessment"
+}
