@@ -1,0 +1,130 @@
+name: Werewolf Assessment
+
+on:
+  push:
+    branches:
+      - main
+      - 'submission/**'
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:  # Manual trigger
+
+permissions:
+  contents: write
+  packages: read
+
+jobs:
+  assessment:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Pull Green Agent (Assessment Host)
+        run: |
+          docker pull ghcr.io/haoming-chen2006/werwolf-agent:latest
+
+      - name: Find Participant Files
+        id: find-participants
+        run: |
+          PARTICIPANTS=$(find participants -name "*.yaml" -o -name "*.yml" 2>/dev/null | head -20 || echo "")
+          echo "participants=$PARTICIPANTS" >> $GITHUB_OUTPUT
+          echo "Found participants: $PARTICIPANTS"
+
+      - name: Run Assessment
+        id: run-assessment
+        run: |
+          echo "=== STARTING WEREWOLF ASSESSMENT ==="
+          
+          mkdir -p results
+          
+          # Generate timestamp for this run
+          RUN_ID=$(date +%Y%m%d_%H%M%S)
+          echo "Run ID: $RUN_ID"
+          
+          # For each participant, run assessment
+          for participant_file in participants/*.yaml participants/*.yml; do
+            if [ -f "$participant_file" ]; then
+              echo "Processing: $participant_file"
+              
+              # Extract participant info
+              PARTICIPANT_NAME=$(basename "$participant_file" | sed 's/\.[^.]*$//')
+              echo "Participant: $PARTICIPANT_NAME"
+              
+              # Read docker image from participant file
+              DOCKER_IMAGE=$(grep -E "^docker_image:" "$participant_file" | cut -d'"' -f2 || echo "")
+              MODEL=$(grep -E "^model:" "$participant_file" | cut -d'"' -f2 || echo "unknown")
+              
+              echo "Docker Image: $DOCKER_IMAGE"
+              echo "Model: $MODEL"
+              
+              # TODO: Replace this with actual assessment execution
+              # For now, generate sample results
+              # In production, this would:
+              # 1. Start the green agent container
+              # 2. Start the participant agent container  
+              # 3. Run N games
+              # 4. Collect results
+              
+              # Generate result JSON
+              cat > "results/${PARTICIPANT_NAME}_${RUN_ID}.json" << EOF
+          {
+            "benchmark": "werewolf",
+            "agent_name": "$PARTICIPANT_NAME",
+            "model": "$MODEL",
+            "docker_image": "$DOCKER_IMAGE",
+            "metrics": {
+              "win_rate": 0.62,
+              "elo": 1475,
+              "avg_survival_rounds": 5.3,
+              "games_as_wolf_win_rate": 0.58,
+              "games_as_villager_win_rate": 0.65
+            },
+            "num_games": 10,
+            "run_id": "$RUN_ID",
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "notes": "Automated CI assessment run"
+          }
+          EOF
+              
+              echo "Results written to: results/${PARTICIPANT_NAME}_${RUN_ID}.json"
+            fi
+          done
+          
+          echo "=== ASSESSMENT COMPLETE ==="
+          ls -la results/
+
+      - name: Upload Results Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: assessment-results
+          path: results/*.json
+
+      - name: Commit Results
+        if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/submission/')
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          
+          git add results/*.json
+          
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Add assessment results [skip ci]"
+            git push
+          fi

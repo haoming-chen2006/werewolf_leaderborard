@@ -1,0 +1,21 @@
+# Assessment Configuration
+assessment:
+  name: "werewolf"
+  version: "1.0.0"
+  
+  # Green agent (assessment host)
+  green_agent:
+    docker_image: "ghcr.io/haoming-chen2006/werwolf-agent:latest"
+    command: "uv run python main.py green"
+    port: 9000
+    
+  # Assessment parameters
+  parameters:
+    num_games: 10
+    timeout_seconds: 300
+    seed: 42
+    
+  # Output configuration  
+  output:
+    directory: "results"
+    format: "json"

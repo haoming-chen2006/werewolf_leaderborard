@@ -1,0 +1,6 @@
+# Haoming's Werewolf Agent
+name: "Werewolf Agent"
+docker_image: "ghcr.io/haoming-chen2006/werwolf-agent:latest"
+model: "gpt-4o-mini"
+description: "Memory-augmented role-aware werewolf agent"
+agent_card_url: "http://localhost:9000/.well-known/agent-card.json"
